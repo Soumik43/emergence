@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -272,6 +273,14 @@ var nonCompanyHosts = map[string]bool{
 	"nytimes.com": true, "forbes.com": true, "businessinsider.com": true,
 	"wikipedia.org": true, "docs.google.com": true, "notion.so": true,
 	"ycombinator.com": true, "stripe.com": true, "aws.amazon.com": true,
+	// App-store and package-registry listings. A company may well be real, but the
+	// listing is not its site, and it dedupes separately from the real domain — a
+	// live run produced both "rtrvr.ai" and its Chrome Web Store page as two
+	// candidates for the same company.
+	"chromewebstore.google.com": true, "chrome.google.com": true,
+	"apps.apple.com": true, "play.google.com": true, "microsoft.com": true,
+	"npmjs.com": true, "pypi.org": true, "marketplace.visualstudio.com": true,
+	"huggingface.co": true, "replit.com": true, "vercel.app": true,
 }
 
 // companyHost extracts the normalised host of a startup's own site, reporting false
@@ -333,13 +342,10 @@ func parseTitle(title, host string) (name, oneLiner string) {
 		}
 	}
 
-	// Launch HN titles are shaped "Launch HN: Foo (YC W25) – pitch"; drop the batch
-	// parenthetical so it doesn't end up inside the name.
-	if i := strings.Index(t, " (YC "); i >= 0 {
-		if j := strings.Index(t[i:], ")"); j >= 0 {
-			t = t[:i] + t[i+j+1:]
-		}
-	}
+	// Titles carry an accelerator batch parenthetical — "Foo (YC W25) – pitch",
+	// "Portal (SPC F25)". Drop it so it doesn't end up inside the company name, and
+	// match any short all-caps-plus-batch shape rather than just YC.
+	t = stripBatchTag(t)
 
 	for _, sep := range titleSeparators {
 		if i := strings.Index(t, sep); i > 0 {
@@ -354,6 +360,15 @@ func parseTitle(title, host string) (name, oneLiner string) {
 	}
 
 	return hostToName(host), t
+}
+
+// batchTag matches an accelerator batch parenthetical: "(YC W25)", "(SPC F25)",
+// "(a16z S24)". Kept tight — an accelerator abbreviation plus a season-and-year code —
+// so it can't eat a real parenthetical like "(open source)".
+var batchTag = regexp.MustCompile(`\s*\([A-Za-z0-9]{1,6}\s+[WSF]\d{2}\)`)
+
+func stripBatchTag(title string) string {
+	return strings.TrimSpace(batchTag.ReplaceAllString(title, ""))
 }
 
 // hostToName turns "replyloop.ai" into "Replyloop" — a placeholder the analysis stage

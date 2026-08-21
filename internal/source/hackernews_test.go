@@ -238,6 +238,23 @@ func TestParseTitle(t *testing.T) {
 			wantOneLiner: "bookkeeping autopilot",
 		},
 		{
+			// A live run produced "Portal (SPC F25)" as a company name, because the
+			// stripper only knew about YC.
+			name:         "non-YC accelerator batch tags are stripped too",
+			title:        "Show HN: Portal (SPC F25) – browser session sandboxes",
+			host:         "makeportals.com",
+			wantName:     "Portal",
+			wantOneLiner: "browser session sandboxes",
+		},
+		{
+			// The batch pattern must not eat an ordinary parenthetical.
+			name:         "a normal parenthetical survives",
+			title:        "Show HN: Ledgerly (open source) – bookkeeping autopilot",
+			host:         "ledgerly.com",
+			wantName:     "Ledgerly (open source)",
+			wantOneLiner: "bookkeeping autopilot",
+		},
+		{
 			name:         "colon separator",
 			title:        "Show HN: Fixa: dispatch software for plumbers",
 			host:         "fixa.app",
@@ -301,6 +318,11 @@ func TestCompanyHost(t *testing.T) {
 		{"https://someone.substack.com/p/x", "", false}, // newsletter
 		{"https://news.ycombinator.com/item?id=1", "", false},
 		{"https://techcrunch.com/2026/01/01/x", "", false}, // press
+		// App-store listings: a live run returned both rtrvr.ai and its Chrome Web
+		// Store page as two separate candidates for the same company.
+		{"https://chromewebstore.google.com/detail/rtrvr/abc", "", false},
+		{"https://apps.apple.com/us/app/foo/id123", "", false},
+		{"https://pypi.org/project/foo/", "", false},
 	}
 
 	for _, tc := range tests {
