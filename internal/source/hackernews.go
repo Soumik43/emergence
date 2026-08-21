@@ -97,21 +97,27 @@ func (h *HackerNews) Fetch(ctx context.Context, seed Seed) ([]model.Candidate, e
 	// and dedupe keeps whichever hit arrives with the stronger signal anyway.
 	tagSets := []string{"show_hn", "story"}
 
+	// One topic becomes several short queries, because the index AND-matches terms and
+	// a partner's phrasing is too long to match anything. See expandQuery.
+	queries := expandQuery(seed.Query)
+
 	var hits []hnHit
-	for _, tags := range tagSets {
-		for page := 0; page < hnPagesPerTag; page++ {
-			batch, err := h.query(ctx, client, base, seed.Query, tags, page)
-			if err != nil {
-				// A failure on the second query shape shouldn't discard the first
-				// one's results — partial sourcing is far more useful than none.
-				if len(hits) > 0 {
-					break
+	for _, q := range queries {
+		for _, tags := range tagSets {
+			for page := 0; page < hnPagesPerTag; page++ {
+				batch, err := h.query(ctx, client, base, q, tags, page)
+				if err != nil {
+					// A failure partway through shouldn't discard the results
+					// already gathered — partial sourcing beats none.
+					if len(hits) > 0 {
+						break
+					}
+					return nil, err
 				}
-				return nil, err
-			}
-			hits = append(hits, batch...)
-			if len(batch) < hnHitsPerPage {
-				break // last page
+				hits = append(hits, batch...)
+				if len(batch) < hnHitsPerPage {
+					break // last page
+				}
 			}
 		}
 	}

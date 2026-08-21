@@ -19,10 +19,21 @@ x402            open standard for internet-native payments
 ```
 
 Every one of these is developer tooling *for people building agents*. Not one is an agent
-sold to a small business. HN's Algolia index is keyword-based with typo tolerance, so a
-natural-language query gets matched on its high-signal tokens — "AI", "agent" — and
-"for SMBs" contributes almost nothing. The search is working exactly as designed; my
-query was never a semantic one.
+sold to a small business.
+
+> **Correction, added later.** I originally wrote that Algolia was keyword-OR matching and
+> simply ignoring "for SMBs". That was wrong. [ADR 005](005-query-expansion.md) has the
+> measured behaviour: the index **AND**-matches terms, and only drops trailing words when
+> a query returns too few results. So "AI agents for SMBs" matched almost nothing as
+> written, and what came back was Algolia's fallback to roughly "AI agents" — the results
+> were the degraded query, not the real one.
+>
+> Different mechanism, same consequence for this stage, which is exactly why the wrong
+> explanation went unchallenged until an unrelated failure forced me to actually measure
+> it. Worth noting as a process point: a plausible diagnosis that predicts the observed
+> symptom is not a verified one.
+
+Either way, the search was working as designed and my query was never a semantic one.
 
 This is the brief's "each source returns 2 garbage results" anti-pattern wearing a
 disguise. The results aren't junk, they're *off-topic*, and the effect on the output is

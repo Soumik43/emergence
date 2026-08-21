@@ -143,11 +143,16 @@ func AnswerTool() anthropic.ToolParam {
 						},
 					},
 				},
+				// Note: no minItems/maxItems, and no minimum/maximum on grade below.
+				// Strict mode validates against a restricted schema subset and
+				// rejects unsupported keywords with a 400 rather than ignoring them,
+				// which would fail the whole run rather than degrade one field. The
+				// constraints are stated in the descriptions instead, and enforced
+				// where they actually have to hold: thesis.Score clamps grades to
+				// 0–5 and scores an omitted criterion as absent. Both are tested.
 				"criteria": map[string]any{
 					"type":        "array",
-					"description": "One entry per thesis criterion. All " + itoa(len(thesis.Criteria)) + " are required; omitting one is scored as absent, not skipped.",
-					"minItems":    len(thesis.Criteria),
-					"maxItems":    len(thesis.Criteria),
+					"description": "One entry per thesis criterion — exactly " + itoa(len(thesis.Criteria)) + ", one for each key in the enum below. Omitting one does not skip it; it is scored as absent.",
 					"items": map[string]any{
 						"type":                 "object",
 						"additionalProperties": false,
@@ -158,10 +163,10 @@ func AnswerTool() anthropic.ToolParam {
 								"enum": criterionKeys,
 							},
 							"grade": map[string]any{
-								"type":        "integer",
-								"minimum":     0,
-								"maximum":     thesis.MaxGrade,
-								"description": "0–5 against this criterion's anchors. 5 is rare and needs direct evidence; 2 is the honest grade for most seed companies on most criteria.",
+								"type": "integer",
+								"description": "An integer from 0 to " + itoa(thesis.MaxGrade) +
+									" against this criterion's anchors. " + itoa(thesis.MaxGrade) +
+									" is rare and needs direct evidence; 2 is the honest grade for most seed companies on most criteria.",
 							},
 							"justification": map[string]any{
 								"type":        "string",

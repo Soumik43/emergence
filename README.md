@@ -70,12 +70,13 @@ defensible score.
 
 ## Design decisions
 
-The reasoning behind the four choices that shaped this, including what each one cost:
+The reasoning behind the five choices that shaped this, including what each one cost:
 
 - [001 — Two sources, not twelve](docs/decisions/001-two-sources-not-twelve.md)
 - [002 — Hybrid fetch: cheap local first, server-side on escalation](docs/decisions/002-hybrid-fetch-ladder.md)
 - [003 — The model grades criteria; Go computes the score](docs/decisions/003-score-in-code.md)
 - [004 — A cheap relevance screen between sourcing and analysis](docs/decisions/004-relevance-screen.md)
+- [005 — Decompose the topic; a partner's phrasing is not a search query](docs/decisions/005-query-expansion.md)
 
 How this was built, and where Claude did the work:
 [docs/PROCESS.md](docs/PROCESS.md) · [docs/AI_ATTRIBUTION.md](docs/AI_ATTRIBUTION.md)
