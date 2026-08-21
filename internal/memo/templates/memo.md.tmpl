@@ -1,0 +1,79 @@
+# {{.Name}} — {{.Call}}
+
+**{{.Score}}/100** against the fund's thesis · confidence {{.ConfidencePct}}%{{if .Provisional}} · **provisional**{{end}}
+{{.Website}}{{if .SourceQuery}} · surfaced by: {{.SourceQuery}}{{end}} · analysed {{.AnalyzedAt}}
+
+> {{.OneLine}}
+
+## The call: {{.Call}}{{if .Provisional}} (on current evidence){{end}}
+
+{{.Rationale}}
+
+**What would change my mind**
+{{range .ChangeMyMind}}
+{{.N}}. {{.Text}}
+{{- end}}
+
+---
+
+## Score
+
+| Criterion | Grade | Weight | Points |
+|---|:---:|---:|---:|
+{{- range .Breakdown}}
+| {{.Label}}{{if .Imputed}} †{{end}} | {{.Grade}}/{{$.MaxGrade}} | {{.Weight}} | {{.Points}} |
+{{- end}}
+| **Total** | | **100** | **{{.Score}}** |
+{{if .HasImputed}}
+† No evidence found. Scored {{.NoEvidenceGrade}}/{{.MaxGrade}} rather than the midpoint — see [THESIS.md](../../../docs/THESIS.md#missing-evidence-is-not-neutral). {{.ImputedWeight}} of 100 points of weight rests on absent evidence, which is why confidence is {{.ConfidencePct}}%.
+{{end}}
+{{- range .Breakdown}}
+- **{{.Label}} — {{.Grade}}/{{$.MaxGrade}}.** {{.Justification}}
+{{- range .Evidence}}
+  - {{.Claim}} — [source]({{.URL}})
+{{- end}}
+{{- end}}
+
+## Product
+
+{{.Product.Summary}}
+{{range .Product.Evidence}}
+- {{.Claim}}{{if .URL}} — [source]({{.URL}}){{else}} — *unsourced*{{end}}
+{{- end}}
+
+## Team
+
+{{.Team.Summary}}
+{{range .Team.Evidence}}
+- {{.Claim}}{{if .URL}} — [source]({{.URL}}){{else}} — *unsourced*{{end}}
+{{- end}}
+
+## Market
+
+{{.Market.Summary}}
+{{range .Market.Evidence}}
+- {{.Claim}}{{if .URL}} — [source]({{.URL}}){{else}} — *unsourced*{{end}}
+{{- end}}
+
+## Risks
+
+{{range .Risks}}
+- **[{{.Severity}}]** {{.Risk}}{{if .Falsifier}}
+  *Resolve by:* {{.Falsifier}}{{end}}
+{{- end}}
+
+## Signals that surfaced this
+
+{{range .Signals}}
+- {{.Date}} — {{.Detail}} ([link]({{.URL}}))
+{{- end}}
+{{if .AnalystNote}}
+## Analyst note
+
+{{.AnalystNote}}
+{{end}}
+---
+
+*Provenance: company page read via {{.PageFetch}}{{if .PageFetchDetail}} ({{.PageFetchDetail}}){{end}};
+{{.WebSearches}} web searches, {{.WebFetches}} server-side fetches. Model {{.Model}}.
+Full exchange log: [`{{.TraceFile}}`]({{.TraceRelPath}}).*
