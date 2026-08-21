@@ -1,0 +1,12 @@
+# Binaries
+/bin/
+/emergence
+
+# Local secrets — the PAT and API keys never live in the repo
+.env
+*.pat
+
+# macOS
+.DS_Store
+
+# Runs are deliberately NOT ignored — committed outputs are part of the submission.
