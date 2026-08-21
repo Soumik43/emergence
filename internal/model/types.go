@@ -146,11 +146,19 @@ const (
 // Meta records how an analysis was produced, so a reviewer can find the exact
 // LLM exchange behind any claim in a memo.
 type Meta struct {
-	Model        string `json:"model"`
-	TraceFile    string `json:"trace_file"` // path, relative to the run dir
-	WebSearches  int    `json:"web_searches"`
-	WebFetches   int    `json:"web_fetches"`
-	InputTokens  int    `json:"input_tokens"`
-	OutputTokens int    `json:"output_tokens"`
-	DurationMS   int64  `json:"duration_ms"`
+	Model     string `json:"model"`
+	TraceFile string `json:"trace_file"` // path, relative to the run dir
+
+	// PageFetch records which tier read the company's own site: "ok" means our own
+	// fetcher managed it, anything else means it escalated to the model's server-side
+	// fetch. Surfaced in the memo so a reader knows how the evidence was obtained,
+	// and aggregated across a run as a cost signal.
+	PageFetch       string `json:"page_fetch"`
+	PageFetchDetail string `json:"page_fetch_detail,omitempty"`
+
+	WebSearches  int   `json:"web_searches"`
+	WebFetches   int   `json:"web_fetches"`
+	InputTokens  int   `json:"input_tokens"`
+	OutputTokens int   `json:"output_tokens"`
+	DurationMS   int64 `json:"duration_ms"`
 }

@@ -1,0 +1,47 @@
+Analyse this company against the fund's thesis.
+
+# What sourcing already found
+
+- **Name (provisional):** {{.Name}}
+- **Website:** {{.Website}}
+- **One-line description (from the source, unverified):** {{.OneLiner}}
+{{- if .Founders}}
+- **Possible team signal:** {{range .Founders}}{{.}}; {{end}}
+{{- end}}
+
+## Signals that surfaced it
+{{range .Signals}}
+- **{{.Kind}}** ({{.Date}}) — {{.Detail}}
+  {{.URL}}
+{{- end}}
+
+The name and one-line description above were parsed from a Hacker News title. Both may be
+wrong. Correct them from the company's own material and return the corrected version.
+
+{{if .PageText}}
+# The company's own site, already retrieved
+
+Fetched from {{.PageURL}} by our own fetcher, so you do not need to fetch this page again.
+{{if .PageTitle}}Page title: {{.PageTitle}}{{end}}
+
+```
+{{.PageText}}
+```
+{{else}}
+# The company's own site could not be retrieved locally
+
+Our fetcher got as far as: **{{.FetchOutcome}}** — {{.FetchDetail}}
+
+Use web fetch on {{.Website}} yourself. If it is genuinely unreachable, say so — a dead or
+parked site is a finding about the company, and it should push grades down rather than
+being worked around.
+{{end}}
+
+# Your task
+
+Research the founders by name, establish what the product actually does at the moment of
+action, and find out whether anyone pays for it. Then grade all
+{{.CriteriaCount}} criteria and call `{{.AnswerTool}}` once.
+
+Today's date is {{.Today}}. Treat anything older than eighteen months as stale unless
+there is newer evidence.
