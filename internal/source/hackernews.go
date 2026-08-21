@@ -158,7 +158,18 @@ func (h *HackerNews) toCandidates(hits []hnHit, seed Seed, minPoints int) []mode
 	byHost := map[string]*model.Candidate{}
 	var order []string
 
+	// The two query shapes overlap by construction: a Show HN post is also a story, so
+	// it comes back from both tags=show_hn and tags=story. Without this, every launch
+	// post is counted as two signals and the candidate looks twice as well-received as
+	// it is.
+	seenPosts := map[string]bool{}
+
 	for _, hit := range hits {
+		if seenPosts[hit.ObjectID] {
+			continue
+		}
+		seenPosts[hit.ObjectID] = true
+
 		host, ok := companyHost(hit.URL)
 		if !ok {
 			continue // self-post, unparseable, or a non-company domain
