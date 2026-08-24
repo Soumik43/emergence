@@ -1,141 +1,127 @@
 # Process
 
-> ## ⚠️ SOUMIK — THIS FILE IS THE ONE YOU HAVE TO WRITE YOURSELF
->
-> Claude scaffolded this. The prompts and the factual timeline below are real and are
-> yours to use, but **every section marked `TODO` needs your own words.**
->
-> The brief is explicit: *"Don't ghostwrite reflective writing. It's obvious."* and lists
-> *"Reflective writing that reads like a model wrote it about how a model was used"* as an
-> anti-pattern. Process visibility is 40% of the grade. A model-written reflection about
-> working with a model is the single fastest way to lose those points — worse than leaving
-> this file out entirely, because it reads as an attempt to fake the thing being graded.
->
-> Delete this banner when you've filled it in.
+**How this file was made:** I built the pipeline in one session with Claude Code, then went
+back through that session with Claude to write this. The quotes are my real messages, copied
+verbatim. Claude drafted the connective prose from that record; I chose the framing and cut it
+down. I would rather say that than have you wonder.
+[AI_ATTRIBUTION.md](AI_ATTRIBUTION.md) discloses the same for the code, which Claude wrote
+almost all of.
 
----
+The honest summary is that we were both wrong at different points and mostly caught each
+other.
 
-## What this is
+## Stack, and what I got wrong first
 
-A record of how the pipeline in this repo actually got built, over one session, working
-with Claude Code.
+Go because it is what I write fastest and least badly in. On a timeboxed take-home that
+mattered more than any property of the language. Cobra because a subcommand per stage is the
+obvious shape and I did not want to hand-roll flag parsing.
 
-For who-wrote-what, see [AI_ATTRIBUTION.md](AI_ATTRIBUTION.md) — that's the factual
-ledger, and it's already complete. This file is for the part a ledger can't carry: what I
-was thinking, where I was wrong, and what I'd do differently.
+My first instinct about the work was wrong twice over:
 
----
+> "id assume we have to primarily web-scrape such details right, we have might have to
+> bypass cloudflare or mulitple things at this point right? we can use firecrawl or
+> something else, and how do we properly search as we are not an llm in itself"
 
-## How I framed the problem before writing anything
+I had decided acquisition was the hard part, so I was braced for proxies and a headless
+browser. And I thought search was a blocker, since a Go binary is not a search engine, so I
+assumed a paid SERP API. Neither held. Hacker News has a free Algolia endpoint where the
+results carry the traction signal in the same response, and a plain `http.Get` plus a text
+extractor reads most landing pages, because a marketing site wants to be read.
 
-**TODO — your words.** Things worth answering, from what you actually said at the start:
+Reaching for the hard version first is still the right reflex, applied too early. It cost
+nothing because I asked instead of building. Had I spent a day on a scraping stack before
+checking whether I needed one, the same reflex would have been the most expensive mistake
+here.
 
-- You read the brief and asked *what do I actually need to do here* before touching code.
-  Why? What was ambiguous?
-- The two questions you raised unprompted were **"we'll have to bypass Cloudflare"** and
-  **"how do we search properly when we aren't an LLM ourselves?"** Both turned out to have
-  cheaper answers than expected. What made you reach for the hard version first — and is
-  that a habit worth keeping, or the thing to correct?
-- You specified Go and Cobra, and asked for a commit per working stage so it would be
-  revertable. Why that, on a throwaway take-home?
+## Where I overrode the model
 
----
+Claude's first design removed local fetching entirely. Every page read would go through the
+model's server-side `web_fetch`, and it wrote a confident ADR for this: no scraping stack, no
+proxy pool, no Cloudflare arms race. It read well. I said no:
 
-## Where I overrode the model, and why
+> "its not necessary that we want to go through a no scraping stack, we would rather go
+> with a hybrid model for the both, and when needed we wisely use what we want to"
 
-**TODO — your words.** This is the most valuable section in the file; don't rush it.
+Three reasons, and the first is the one I would defend. "Never fetch locally" is a rule, and
+this does not call for a rule. Some pages are trivially readable and some are not, you can
+look at which is which, and a blanket policy throws away information you already have. Then
+cost, because paying a metered API to read a public marketing page is wasteful at twenty
+companies and worse at two hundred. Then control, because when you outsource the fetch you
+cannot see or fix what happens when it fails.
 
-The factual record: Claude's first design had **no local fetching at all** — every page
-read through Anthropic's server-side `web_fetch`. You rejected it mid-build:
+Pushed on it, Claude found the error in its own reasoning quickly, and it is recorded in
+[ADR 002](decisions/002-hybrid-fetch-ladder.md): it had treated "avoid a scraping stack" and
+"never fetch locally" as one choice. What is worth avoiding is the stack, the proxies and
+browsers and per-site parsers. A local fetch plus an extractor is about a hundred and fifty
+lines. Dropping it did not buy simplicity, it moved the same work onto a metered API.
 
-> *"its not necessary that we want to go through a no scraping stack, we would rather go
-> with a hybrid model for the both, and when needed we wisely use what we want to"*
+What shipped is a three tier ladder: local first, escalate on a classified failure, and record
+which tier answered.
 
-That became [ADR 002](decisions/002-hybrid-fetch-ladder.md) and the three-tier ladder in
-`internal/fetch`. The diagnosis written into that ADR is that Claude had conflated "avoid
-a scraping stack" with "never fetch locally" — two different choices — and had taken a
-defensible principle one step too far into a slogan.
+## What that taught me about reviewing agent output
 
-Worth writing down:
+The ADR for the design I rejected was well argued. Structured, specific, honest about
+tradeoffs, and wrong. It was not sloppy work I caught by noticing sloppiness. The reasoning
+was fluent and the conclusion was bad, so fluency is not a signal I can use.
 
-- What made you push back? Cost, control, or something about the shape of the design?
-- Did you spot it because you know what `http.Get` costs, or because "never do X" as an
-  architecture smelled wrong?
-- The model produced a *confident, well-argued ADR* for the design you then rejected. What
-  does that tell you about reviewing agent output? Where else in this repo might the same
-  thing have happened and not been caught?
+Which raises where else that is sitting uncaught, and I think I know.
+[AI_ATTRIBUTION.md](AI_ATTRIBUTION.md#what-claude-decided-without-review) lists what went in
+with no second pair of eyes. The item that worries me is the thesis weights. Founder proximity
+at 25, traction at 10, four others. Those six numbers decide every score the pipeline
+produces. They are argued for in [THESIS.md](THESIS.md), and the argument is plausible in
+exactly the way the fetch ADR was plausible. I did not review them, and I could not defend
+them in a partner meeting on anything better than "they sound about right", which is not a
+defence.
 
----
+## The bug no test would have caught
 
-## What I let the model decide, and whether that was right
+Stage 1 was built, unit tested, green. Then we ran it against `--query "AI agents for SMBs"`
+and got twelve real companies, all of them developer tooling for people building agents. MCP
+gateways, agent observability, email infrastructure for agents. Not one sold to a small
+business.
 
-**TODO — your words.**
+The code was working exactly as written. What was broken sat upstream of anything a unit test
+sees. That produced the relevance screen ([ADR 004](decisions/004-relevance-screen.md)) and
+then, after a second run showed the opposite failure, query decomposition
+([ADR 005](decisions/005-query-expansion.md)). I should have run stage 1 the moment it
+compiled, before anything was built on top of it.
 
-[AI_ATTRIBUTION.md](AI_ATTRIBUTION.md#what-claude-decided-without-review) lists what went
-in without a second pair of eyes: the source choice, the six criteria and their weights,
-missing-evidence scoring 1/5 rather than the midpoint, every threshold, the relevance
-screen, what got tested.
+## The thing that happened twice
 
-The weights are the interesting one — they're the load-bearing claim of the whole scoring
-system (`founder_workflow_proximity` at 25 vs `traction_signal` at 10), they're argued for
-in THESIS.md, and they're validated against nothing at all.
+ADR 004 originally gave the wrong mechanism. It said Algolia was OR matching and diluting "for
+SMBs", which explained the symptom and was wrong. It AND matches, and only drops trailing
+words when a query underfills. Three curl calls settled that, and nobody made them until an
+unrelated failure forced it.
 
-- Which of those would you actually want to review before this ran on real deal flow?
-- Which are fine to leave to the model, and what distinguishes the two groups?
+Then the same shape elsewhere. Pushing this repo kept failing with `Repository not found`.
+First diagnosis, the repo did not exist: true, fixed, still failed. Second, the token could
+not see it: also true, also fixed, still failed. The real cause was Xcode shipping a system
+gitconfig with `credential.helper = osxkeychain`, git accumulating credential helpers rather
+than replacing them, and the system one answering first with my work account.
 
----
+Two independent instances, so a pattern rather than bad luck. A diagnosis that explains the
+symptom is not a verified diagnosis. Both times the wrong one survived because it predicted
+what we were seeing, and both times the check that would have killed it took under a minute.
 
-## The bug that no test would have caught
+## What is not finished
 
-**TODO — your words.**
+**The rubric has never been calibrated**, not against one company whose outcome is known.
+There is no evidence a 72 means anything different from a 65. The arithmetic is auditable and
+the weights are not validated, which are different properties.
 
-Stage 1 was built, unit-tested, and green. The first live run against
-`--query "AI agents for SMBs"` returned twelve real companies, every one of them developer
-tooling for people *building* agents — MCP gateways, agent observability, email infra for
-agents. Zero were software sold to a small business. The code was working exactly as
-written; HN's search is keyword-based and "for SMBs" contributed nothing to the match.
+**One source behind an interface built for several.** `source.Source` has one implementation.
+That is speculative generality until the second exists, and I left it because the YC batch
+feed is obviously next, which is what everyone says right before they never add it.
 
-That produced [ADR 004](decisions/004-relevance-screen.md) and `internal/screen`.
+**The relevance screen is a patch.** It works and it is cheap, and it exists because of a bad
+live result rather than because anyone thought about relevance up front.
 
-- What does it say about the tests that they were all green?
-- Green tests, plausible code, wrong output — how do you catch that class of problem
-  earlier next time?
+## If I did it again
 
----
+Run every stage against real data the moment it compiles. Both genuinely bad problems here
+were found by running the thing, neither by a test.
 
-## What I'd do differently
-
-**TODO — your words.** Be specific and be willing to name something that isn't finished.
-Honest candidates, if you agree with them:
-
-- The scoring rubric has never been calibrated against a company whose outcome is known.
-  There's no way to tell whether a 72 means anything.
-- Only one source shipped. `source.Source` is an interface with a single implementation,
-  which is speculative generality until the second one exists.
-- The relevance screen was reactive — bolted on after a bad result rather than designed in.
-- `--no-screen --force` is the escape hatch for a wrongly-screened company, but nothing
-  makes a wrong screen *visible* apart from reading the index.
-
----
-
-## If I ran this again
-
-**TODO — your words.** What would you change about how you worked with the agent, not
-about the code?
-
----
-
-## Timeline
-
-Factual, for reference while writing the above. `git log --reverse --format="%h %s"` has
-the rest.
-
-| # | Commit | What landed |
-|---|---|---|
-| 1 | Thesis and ADRs | Thesis written *before* any code, so the rubric had something to be accountable to |
-| 2 | Types + scoring | Scorer with tests for malformed model output |
-| 3 | Tier-1 fetcher | Hybrid ladder after your override; three bugs caught by tests |
-| 4 | Stage 1 sourcing | HN + quality filter; double-counting bug caught |
-| 5 | Stage 2 analysis | Strict tool call, wire-level tracing |
-| 6 | Stage 3 memos | Deterministic rendering, no model calls |
-| 7 | Relevance screen | Response to the bad live run |
+And spend the review on the judgement calls rather than the code. I put my attention on the
+code, which the tests already covered, and almost none on the six numbers that decide every
+output. Code either works or it does not and something tells you. A weight of 25 that should
+be 15 will never announce itself.

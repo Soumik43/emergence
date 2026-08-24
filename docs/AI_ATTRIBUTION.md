@@ -3,8 +3,11 @@
 The brief says: *"If an agent wrote a module end-to-end, say so. We don't penalize that;
 we penalize hiding it."* So, precisely.
 
-This document is a factual record of who wrote what. It is not the reflective part —
-that's [PROCESS.md](PROCESS.md), which is Soumik's, in his own words.
+This document is a factual record of who wrote what. The reflective part is
+[PROCESS.md](PROCESS.md), and that file opens by disclosing its own authorship, which is
+mixed: Claude drafted the prose from the session transcript, Soumik chose the framing,
+decided what was worth admitting, and cut it. Its direct quotes are his real messages from
+the session, verbatim.
 
 ## The short version
 
@@ -25,7 +28,7 @@ nothing was written by a model and presented as hand-written.
 | `docs/decisions/*.md` | Claude, describing decisions Claude mostly made |
 | `README.md`, `Makefile` | Claude |
 | Commit messages | Claude |
-| `docs/PROCESS.md` | **Soumik.** Scaffolded by Claude; the reflective content is his |
+| `docs/PROCESS.md` | **Mixed, and it says so in its own first paragraph.** Claude drafted the prose from the session transcript; Soumik set the framing, chose the admissions, and cut it. Quotes in it are his real session messages |
 | This file | Claude |
 
 ## What Soumik decided
