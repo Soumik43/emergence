@@ -130,3 +130,4 @@ docs/                 thesis, decisions, process
 
 Go 1.24+ and an `ANTHROPIC_API_KEY`. Hacker News needs no key. `make test` runs the suite,
 which needs neither.
+# emergence
