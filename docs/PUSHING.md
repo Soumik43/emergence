@@ -47,12 +47,35 @@ authenticate on its own.
 ## How it works
 
 A repo-local credential helper, set with `git config --local`, so nothing here touches the
-global config, the macOS keychain, or the `gh` session:
+global config, the macOS keychain, or the `gh` session.
 
+**The empty first entry is load-bearing.** Git does not replace inherited credential
+helpers, it *accumulates* them, and consults them in config order — system, then global,
+then local. On this machine Xcode's Command Line Tools ship a **system** gitconfig
+containing `credential.helper = osxkeychain`, which therefore runs first, finds the work
+account's saved credentials, and returns them. The repo-local helper never gets asked.
+
+Setting `credential.helper` to an empty string **resets the accumulated list**, so the
+local helper is the only one consulted for this repo:
+
+```bash
+git config --local --unset-all credential.helper
+git config --local --add credential.helper ""          # resets the inherited list
+git config --local --add credential.helper '!f() { test "$1" = get \
+    && echo "username=Soumik43" \
+    && echo "password=$(cat "$HOME/.emergence-pat")"; }; f'
 ```
-credential.helper = !f() { test "$1" = get && echo "username=Soumik43" \
-    && echo "password=$(cat "$HOME/.emergence-pat")"; }; f
+
+Verify which identity git will actually use — this is the single most useful command here,
+and it is what finally located the problem:
+
+```bash
+printf 'protocol=https\nhost=github.com\npath=Soumik43/emergence.git\n\n' \
+  | git credential fill
 ```
+
+If that prints `username=soumik-xflowpay`, the work keychain is still winning and no
+amount of token fiddling will help.
 
 The token is never written into the repo, the remote URL, or the git config — only the
 path to it is. `.gitignore` also excludes `*.pat` and `.env` as a second line of defence.
@@ -61,7 +84,14 @@ To undo: `git config --local --unset credential.helper`.
 
 ## Troubleshooting
 
-**`remote: Repository not found`** — two different causes, same message:
+**`remote: Repository not found`** — three different causes, same message. GitHub returns
+404 rather than 403 for a private repo so as not to leak its existence, which is what makes
+them indistinguishable. Work through them in this order:
+
+0. **Git is authenticating as the wrong account.** The most likely cause on this machine,
+   and the one that cost the most time. Run the `git credential fill` command above; if it
+   answers `soumik-xflowpay`, see "How it works" — the system osxkeychain helper is winning
+   and the token is irrelevant.
 
 1. The repo genuinely doesn't exist yet. Check: `curl -s -o /dev/null -w '%{http_code}\n'
    https://api.github.com/users/Soumik43` returns 200 for the user, but the repo is a
