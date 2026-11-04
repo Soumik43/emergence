@@ -1,5 +1,7 @@
 # emergence
 
+[![ci](https://github.com/Soumik43/emergence/actions/workflows/ci.yml/badge.svg)](https://github.com/Soumik43/emergence/actions/workflows/ci.yml)
+
 An investment-triage pipeline. Point it at a topic, get one memo per startup ending in
 **Pass / Watch / Take a meeting**, with every claim traceable to a URL.
 
@@ -128,6 +130,5 @@ docs/                 thesis, decisions, process
 
 ## Requirements
 
-Go 1.24+ and an `ANTHROPIC_API_KEY`. Hacker News needs no key. `make test` runs the suite,
+Go 1.26+ and an `ANTHROPIC_API_KEY`. Hacker News needs no key. `make test` runs the suite,
 which needs neither.
-# emergence
