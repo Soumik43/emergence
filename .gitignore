@@ -9,4 +9,4 @@
 # macOS
 .DS_Store
 
-# Runs are deliberately NOT ignored: committed runs let readers see output without spending tokens.
+# Runs are deliberately NOT ignored, so a run can be committed as an example.

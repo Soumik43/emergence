@@ -13,9 +13,6 @@ go build -o bin/emergence ./cmd/emergence
 
 Output lands in `runs/<topic>-<date>/`. Start with `index.md`.
 
-**Committed runs are in [`runs/`](runs/)** — you don't need to run anything or spend
-tokens to read the output.
-
 ## What it does
 
 Three stages, each writing its output to disk before the next one reads it.
